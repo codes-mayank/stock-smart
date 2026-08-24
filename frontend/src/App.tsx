@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
@@ -8,26 +9,28 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Inventory from "./pages/Inventory";
-import Sales from "./pages/Sales";
-import Analytics from "./pages/Analytics";
-import ShopNetwork from "./pages/ShopNetwork";
-import ShopProducts from "./pages/ShopProducts";
-import Customer from "./pages/Customer";
-import CustomerProfile from "./pages/CustomerProfile";
 import { useProfile } from "@/hooks/useData";
-import Admin from "./pages/Admin";
-import Profile from "./pages/Profile";
-import Marketplace from "./pages/Marketplace";
-import NotFound from "./pages/NotFound";
-import CreditBook from "./pages/CreditBook";
-import ComboOffers from "./pages/ComboOffers";
-import AdminOverview from "./pages/admin/AdminOverview";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminInventory from "./pages/admin/AdminInventory";
-import AdminUtilities from "./pages/admin/AdminUtilities";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+
+const Auth = React.lazy(() => import("./pages/Auth"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const Inventory = React.lazy(() => import("./pages/Inventory"));
+const Sales = React.lazy(() => import("./pages/Sales"));
+const Analytics = React.lazy(() => import("./pages/Analytics"));
+const ShopNetwork = React.lazy(() => import("./pages/ShopNetwork"));
+const ShopProducts = React.lazy(() => import("./pages/ShopProducts"));
+const Customer = React.lazy(() => import("./pages/Customer"));
+const CustomerProfile = React.lazy(() => import("./pages/CustomerProfile"));
+const Admin = React.lazy(() => import("./pages/Admin"));
+const Profile = React.lazy(() => import("./pages/Profile"));
+const Marketplace = React.lazy(() => import("./pages/Marketplace"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
+const CreditBook = React.lazy(() => import("./pages/CreditBook"));
+const ComboOffers = React.lazy(() => import("./pages/ComboOffers"));
+const AdminOverview = React.lazy(() => import("./pages/admin/AdminOverview"));
+const AdminUsers = React.lazy(() => import("./pages/admin/AdminUsers"));
+const AdminInventory = React.lazy(() => import("./pages/admin/AdminInventory"));
+const AdminUtilities = React.lazy(() => import("./pages/admin/AdminUtilities"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +44,7 @@ const queryClient = new QueryClient({
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading) return <LoadingSpinner fullScreen />;
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
@@ -53,7 +56,7 @@ function AppRoutes() {
   // Guard component to ensure only users with role 'customer' can access customer routes
   function CustomerGuard() {
     const { data: profile, isLoading: profileLoading } = useProfile();
-    if (profileLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+    if (profileLoading) return <LoadingSpinner fullScreen />;
     // Allow access if profile not found yet (new signup) or if role is customer
     if (profile && profile.role !== 'customer') return <Navigate to="/" replace />;
     return <Customer />;
@@ -62,7 +65,7 @@ function AppRoutes() {
   // Guard component for customer profile
   function CustomerProfileGuard() {
     const { data: profile, isLoading: profileLoading } = useProfile();
-    if (profileLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+    if (profileLoading) return <LoadingSpinner fullScreen />;
     if (profile && profile.role !== 'customer') return <Navigate to="/" replace />;
     return <CustomerProfile />;
   }
@@ -71,7 +74,7 @@ function AppRoutes() {
   function HomeGuard() {
     const { user } = useAuth();
     const { data: profile, isLoading: profileLoading } = useProfile();
-    if (profileLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+    if (profileLoading) return <LoadingSpinner fullScreen />;
     if (profile?.role === 'admin' || user?.email === 'admin@gmail.com') return <Navigate to="/admin" replace />;
     if (profile?.role === 'customer') return <Navigate to="/customer" replace />;
     return <Dashboard />;
@@ -81,7 +84,7 @@ function AppRoutes() {
   function AuthRedirect() {
     const { user } = useAuth();
     const { data: profile, isLoading: profileLoading } = useProfile();
-    if (profileLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+    if (profileLoading) return <LoadingSpinner fullScreen />;
     if (profile?.role === 'admin' || user?.email === 'admin@gmail.com') return <Navigate to="/admin" replace />;
     if (profile?.role === 'customer') return <Navigate to="/customer" replace />;
     return <Navigate to="/" replace />;
@@ -93,7 +96,7 @@ function AppRoutes() {
     const { data: profile, isLoading: profileLoading } = useProfile();
     
     if (profileLoading) {
-      return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Verifying admin access...</div>;
+      return <LoadingSpinner fullScreen text="Verifying admin access..." />;
     }
     
     // Grant access if database role is 'admin' OR if email is the master admin email
@@ -106,43 +109,45 @@ function AppRoutes() {
     return <>{children}</>;
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading) return <LoadingSpinner fullScreen />;
 
   return (
     <>
       <AnimatedBackground />
       <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/auth" element={user ? <AuthRedirect /> : <Auth />} />
-          <Route path="/marketplace" element={<AppLayout><Marketplace /></AppLayout>} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Routes>
-                    <Route path="/" element={<HomeGuard />} />
-                    <Route path="/customer" element={<CustomerGuard />} />
-                    <Route path="/customer/profile" element={<CustomerProfileGuard />} />
-                    <Route path="/inventory" element={<Inventory />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/admin" element={<AdminGuard><AdminOverview /></AdminGuard>} />
-                    <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-                    <Route path="/admin/inventory" element={<AdminGuard><AdminInventory /></AdminGuard>} />
-                    <Route path="/admin/utilities" element={<AdminGuard><AdminUtilities /></AdminGuard>} />
-                    <Route path="/sales" element={<Sales />} />
-                    <Route path="/credit-book" element={<CreditBook />} />
-                    <Route path="/combo-offers" element={<ComboOffers />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/network" element={<ShopNetwork />} />
-                    <Route path="/shop/:id" element={<ShopProducts />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+        <Suspense fallback={<LoadingSpinner fullScreen />}>
+          <Routes location={location} key={location.pathname}>
+            <Route path="/auth" element={user ? <AuthRedirect /> : <Auth />} />
+            <Route path="/marketplace" element={<AppLayout><Marketplace /></AppLayout>} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Routes>
+                      <Route path="/" element={<HomeGuard />} />
+                      <Route path="/customer" element={<CustomerGuard />} />
+                      <Route path="/customer/profile" element={<CustomerProfileGuard />} />
+                      <Route path="/inventory" element={<Inventory />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/admin" element={<AdminGuard><AdminOverview /></AdminGuard>} />
+                      <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+                      <Route path="/admin/inventory" element={<AdminGuard><AdminInventory /></AdminGuard>} />
+                      <Route path="/admin/utilities" element={<AdminGuard><AdminUtilities /></AdminGuard>} />
+                      <Route path="/sales" element={<Sales />} />
+                      <Route path="/credit-book" element={<CreditBook />} />
+                      <Route path="/combo-offers" element={<ComboOffers />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/network" element={<ShopNetwork />} />
+                      <Route path="/shop/:id" element={<ShopProducts />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
       </AnimatePresence>
     </>
   );

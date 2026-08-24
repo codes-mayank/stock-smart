@@ -257,3 +257,20 @@ export type NotificationInsert = Omit<Notification, 'id' | 'created_at'> & {
 
 export type NotificationUpdate = Partial<Notification>;
 
+export interface WasteImpact {
+  id: string;
+  user_id: string;
+  date: string; // YYYY-MM-DD format for easy aggregation
+  product_id: string;
+  product_name: string;
+  category: string;
+  quantitySaved: number;
+  valueSaved: number;
+  unit: string;
+  created_at: string;
+}
+
+export type WasteImpactInsert = Omit<WasteImpact, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};

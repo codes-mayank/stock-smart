@@ -11,7 +11,7 @@ import type {
   SurplusListing, TransferRequest, StockPurchaseRequest,
   CreditEntry, CreditPayment,
   ComboOffer, ComboSale,
-  Notification
+  Notification, WasteImpact
 } from "@/types/database";
 
 import { API_BASE_URL } from "@/config";
@@ -281,6 +281,10 @@ export function useAddSale() {
         .sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
 
       let remaining = quantityToSell;
+      let wasteSavedQuantity = 0;
+      let wasteSavedValue = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       // 2. Reduce stock FIFO
       for (const batch of batches) {
@@ -289,6 +293,13 @@ export function useAddSale() {
         await updateDoc(doc(db, "products", batch.id), {
           quantity: batch.quantity - deduct,
         });
+
+        const expiryDate = new Date(batch.expiry_date);
+        if (expiryDate >= today) {
+          wasteSavedQuantity += deduct;
+          wasteSavedValue += (deduct * (total / quantityToSell)); 
+        }
+
         remaining -= deduct;
       }
 
@@ -296,16 +307,33 @@ export function useAddSale() {
         throw new Error(`Not enough stock. Missing ${remaining} items for ${productName}`);
       }
 
+      const now = new Date().toISOString();
+
       // 3. Insert sale record
       await addDoc(collection(db, "sales"), {
         user_id: user!.uid,
         product_name: productName,
         quantity: quantityToSell,
         total: total,
-        sale_date: new Date().toISOString().split("T")[0],
-        created_at: new Date().toISOString(),
+        sale_date: now.split("T")[0],
+        created_at: now,
         source: source || "manual",
       });
+
+      // 4. Log waste impact if applicable
+      if (wasteSavedQuantity > 0 && batches.length > 0) {
+        await addDoc(collection(db, "waste_impact"), {
+          user_id: user!.uid,
+          date: now.split("T")[0],
+          product_id: batches[0].id,
+          product_name: productName,
+          category: batches[0].category || "Uncategorized",
+          quantitySaved: wasteSavedQuantity,
+          valueSaved: wasteSavedValue,
+          unit: batches[0].unit || "unit",
+          created_at: now,
+        });
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
@@ -1006,12 +1034,24 @@ export function useAddCreditSale() {
         .sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
 
       let remaining = quantityToSell;
+      let wasteSavedQuantity = 0;
+      let wasteSavedValue = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       for (const batch of batches) {
         if (remaining <= 0) break;
         const deduct = Math.min(batch.quantity, remaining);
         await updateDoc(doc(db, "products", batch.id), {
           quantity: batch.quantity - deduct,
         });
+
+        const expiryDate = new Date(batch.expiry_date);
+        if (expiryDate >= today) {
+          wasteSavedQuantity += deduct;
+          wasteSavedValue += (deduct * (total / quantityToSell)); 
+        }
+
         remaining -= deduct;
       }
 
@@ -1031,6 +1071,21 @@ export function useAddCreditSale() {
         created_at: now,
         payment_type: "credit",
       });
+
+      // 2.5 Log waste impact if applicable
+      if (wasteSavedQuantity > 0 && batches.length > 0) {
+        await addDoc(collection(db, "waste_impact"), {
+          user_id: user!.uid,
+          date: now.split("T")[0],
+          product_id: batches[0].id,
+          product_name: productName,
+          category: batches[0].category || "Uncategorized",
+          quantitySaved: wasteSavedQuantity,
+          valueSaved: wasteSavedValue,
+          unit: batches[0].unit || "unit",
+          created_at: now,
+        });
+      }
 
       // 3. Create credit entry
       const dueAmount = total - amountPaid;
@@ -1319,6 +1374,68 @@ export function useDeleteProfile() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["all-profiles"] });
+    },
+  });
+}
+
+export function useWasteImpact() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["waste-impact", user?.uid],
+    queryFn: async () => {
+      if (!user) return [];
+      const q = query(
+        collection(db, "waste_impact"),
+        where("user_id", "==", user.uid)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as WasteImpact[];
+    },
+    enabled: !!user,
+    ...QUERY_OPTIONS,
+  });
+}
+
+export function useSeedWasteData() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      const today = new Date();
+      
+      const seedData = [
+        { product_name: "Milk", category: "Dairy", quantitySaved: 10, valueSaved: 500, unit: "L", daysAgo: 1 },
+        { product_name: "Bread", category: "Bakery", quantitySaved: 5, valueSaved: 200, unit: "packs", daysAgo: 2 },
+        { product_name: "Apples", category: "Produce", quantitySaved: 20, valueSaved: 1000, unit: "kg", daysAgo: 5 },
+        { product_name: "Yogurt", category: "Dairy", quantitySaved: 15, valueSaved: 450, unit: "cups", daysAgo: 10 },
+        { product_name: "Bananas", category: "Produce", quantitySaved: 12, valueSaved: 360, unit: "kg", daysAgo: 15 },
+        { product_name: "Cheese", category: "Dairy", quantitySaved: 2, valueSaved: 400, unit: "kg", daysAgo: 20 },
+        { product_name: "Tomatoes", category: "Produce", quantitySaved: 8, valueSaved: 320, unit: "kg", daysAgo: 25 },
+        { product_name: "Eggs", category: "Dairy", quantitySaved: 30, valueSaved: 210, unit: "pcs", daysAgo: 40 },
+        { product_name: "Lettuce", category: "Produce", quantitySaved: 4, valueSaved: 120, unit: "kg", daysAgo: 60 }
+      ];
+
+      for (const item of seedData) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - item.daysAgo);
+        
+        await addDoc(collection(db, "waste_impact"), {
+          user_id: user.uid,
+          date: date.toISOString().split("T")[0],
+          product_id: `seed_${item.daysAgo}`,
+          product_name: item.product_name,
+          category: item.category,
+          quantitySaved: item.quantitySaved,
+          valueSaved: item.valueSaved,
+          unit: item.unit,
+          created_at: date.toISOString(),
+        });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["waste-impact"] });
     },
   });
 }
