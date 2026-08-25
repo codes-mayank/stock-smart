@@ -30,8 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const decoded = jwtDecode<{uid: string, email: string}>(token);
-        setUser({ uid: decoded.uid, email: decoded.email });
+        const decoded = jwtDecode<{uid: string, email: string, exp?: number}>(token);
+        if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+          console.error("Token expired");
+          localStorage.removeItem('token');
+        } else {
+          setUser({ uid: decoded.uid, email: decoded.email });
+        }
       } catch (err) {
         console.error("Invalid token:", err);
         localStorage.removeItem('token');

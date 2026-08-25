@@ -112,7 +112,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     const newUser = await User.create({ email, password: hashedPassword });
     
-    const token = jwt.sign({ uid: newUser._id.toString(), email: newUser.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ uid: newUser._id.toString(), email: newUser.email }, JWT_SECRET, { expiresIn: '1h' });
     
     res.status(201).json({ token, user: { uid: newUser._id.toString(), email: newUser.email } });
   } catch (error: any) {
@@ -135,7 +135,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ uid: user._id.toString(), email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ uid: user._id.toString(), email: user.email }, JWT_SECRET, { expiresIn: '1h' });
     
     res.json({ token, user: { uid: user._id.toString(), email: user.email } });
   } catch (error: any) {
