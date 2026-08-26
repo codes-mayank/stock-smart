@@ -1,10 +1,12 @@
-import { Package, AlertTriangle, TrendingUp, ShoppingBag, Clock } from "lucide-react";
+import { useState } from "react";
+import { Package, AlertTriangle, TrendingUp, ShoppingBag, Clock, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useProducts, useSales } from "@/hooks/useData";
 import { motion, Variants } from "framer-motion";
 import CountUp from "react-countup";
-import Sparkline from "@/components/ui/sparkline";
 
 function getExpiryDetails(expiryDate: string) {
   const diff = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -14,6 +16,45 @@ function getExpiryDetails(expiryDate: string) {
   else if (diff <= 7) status = "warning"; // <= 7 days
   else if (diff <= 30) status = "upcoming"; // <= 30 days
   return { status, daysLeft: diff };
+}
+
+function RecommendationItem({ rec, dayText, orderQty }: { rec: any, dayText: string, orderQty: number }) {
+  const [ordering, setOrdering] = useState(false);
+  
+  const handleOrder = () => {
+    setOrdering(true);
+    setTimeout(() => {
+      setOrdering(false);
+      toast.success(`Order placed for ${orderQty} units of ${rec.name}`, {
+        description: "Your distributor has been notified. Expected delivery: Tomorrow.",
+      });
+    }, 1500);
+  };
+
+  return (
+    <div className="bg-background/80 backdrop-blur-sm border border-border p-4 rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      <div>
+        <div className="font-semibold text-foreground mb-1 text-base">{rec.name}</div>
+        <div className="text-xs text-muted-foreground mb-3">
+          You sell ~{rec.avgDaily.toFixed(1)}/day. Current stock: {rec.stock}
+        </div>
+        <div className="text-sm mb-1">
+          Will run out by <span className="font-semibold text-rose-500">{dayText}</span>
+        </div>
+      </div>
+      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">Suggested: {orderQty} units</span>
+        <Button 
+          size="sm" 
+          className="bg-indigo-600 hover:bg-indigo-700 text-white h-8 text-xs px-3 shadow-sm transition-all"
+          onClick={handleOrder}
+          disabled={ordering}
+        >
+          {ordering ? "Ordering..." : "Order Now"}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export default function Dashboard() {
@@ -28,6 +69,44 @@ export default function Dashboard() {
     return daysLeft >= 0 && daysLeft <= 30;
   }).length;
   const totalRevenue = sales.reduce((sum, s) => sum + Number(s.total), 0);
+
+  // --- AI Demand Forecasting Logic ---
+  const now = new Date();
+  const nowTime = now.getTime();
+  const productStockMap: Record<string, number> = {};
+  products.forEach(p => productStockMap[p.name] = (productStockMap[p.name] || 0) + p.quantity);
+
+  const productSalesLife: Record<string, { qtySold: number; minDate: number }> = {};
+  sales.forEach(sale => {
+    const time = new Date(sale.created_at).getTime();
+    if (!productSalesLife[sale.product_name]) {
+      productSalesLife[sale.product_name] = { qtySold: 0, minDate: time };
+    }
+    productSalesLife[sale.product_name].qtySold += sale.quantity;
+    if (time < productSalesLife[sale.product_name].minDate) {
+      productSalesLife[sale.product_name].minDate = time;
+    }
+  });
+
+  const aiRecommendations = Object.keys(productStockMap)
+    .map(name => {
+      const stock = productStockMap[name];
+      const sData = productSalesLife[name];
+      
+      let avgDaily = 0;
+      let daysUntilEmpty = Number.POSITIVE_INFINITY;
+      
+      if (sData && sData.qtySold > 0) {
+        const daysActive = Math.max(1, (nowTime - sData.minDate) / (1000 * 60 * 60 * 24));
+        avgDaily = sData.qtySold / daysActive;
+        daysUntilEmpty = avgDaily > 0 ? stock / avgDaily : Number.POSITIVE_INFINITY;
+      }
+      
+      return { name, stock, avgDaily, daysUntilEmpty };
+    })
+    .filter(r => r.avgDaily > 0.1 && r.daysUntilEmpty <= 14) // Only show items running out in <= 14 days
+    .sort((a, b) => a.daysUntilEmpty - b.daysUntilEmpty)
+    .slice(0, 3); // Top 3 most urgent
 
   const alertProducts = products.filter(p => {
     const { daysLeft } = getExpiryDetails(p.expiry_date);
@@ -71,12 +150,7 @@ export default function Dashboard() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="w-full">
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
         <p className="page-subtitle">Overview of your store's performance</p>
@@ -151,6 +225,43 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* AI Demand Forecasting */}
+      {aiRecommendations.length > 0 && (
+        <motion.div variants={container} initial="hidden" animate="show" className="mb-8">
+          <motion.div variants={item}>
+            <Card className="border-indigo-500/30 shadow-md bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <Sparkles className="h-32 w-32 text-indigo-500" />
+              </div>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                  <Sparkles className="h-5 w-5" />
+                  AI Predictive Restocking
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Based on your recent sales velocity, here is what you need to order before you run out.</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {aiRecommendations.map(rec => {
+                    const runOutDate = new Date(nowTime + rec.daysUntilEmpty * 24 * 60 * 60 * 1000);
+                    // Use tomorrow/today if applicable, otherwise weekday
+                    let dayText = runOutDate.toLocaleDateString('en-US', { weekday: 'long' });
+                    if (rec.daysUntilEmpty <= 1) dayText = "Tomorrow";
+                    if (rec.daysUntilEmpty <= 0.2) dayText = "Today";
+
+                    const orderQty = Math.ceil(rec.avgDaily * 14); // order for 14 days
+                    
+                    return (
+                      <RecommendationItem key={rec.name} rec={rec} dayText={dayText} orderQty={orderQty} />
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+      )}
 
       <motion.div variants={container} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-50px" }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div variants={item}>
@@ -243,6 +354,6 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

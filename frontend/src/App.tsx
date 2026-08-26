@@ -114,41 +114,39 @@ function AppRoutes() {
   return (
     <>
       <AnimatedBackground />
-      <AnimatePresence mode="wait">
-        <Suspense fallback={<LoadingSpinner fullScreen />}>
-          <Routes location={location} key={location.pathname}>
-            <Route path="/auth" element={user ? <AuthRedirect /> : <Auth />} />
-            <Route path="/marketplace" element={<AppLayout><Marketplace /></AppLayout>} />
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<HomeGuard />} />
-                      <Route path="/customer" element={<CustomerGuard />} />
-                      <Route path="/customer/profile" element={<CustomerProfileGuard />} />
-                      <Route path="/inventory" element={<Inventory />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/admin" element={<AdminGuard><AdminOverview /></AdminGuard>} />
-                      <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
-                      <Route path="/admin/inventory" element={<AdminGuard><AdminInventory /></AdminGuard>} />
-                      <Route path="/admin/utilities" element={<AdminGuard><AdminUtilities /></AdminGuard>} />
-                      <Route path="/sales" element={<Sales />} />
-                      <Route path="/credit-book" element={<CreditBook />} />
-                      <Route path="/combo-offers" element={<ComboOffers />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/network" element={<ShopNetwork />} />
-                      <Route path="/shop/:id" element={<ShopProducts />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Suspense>
-      </AnimatePresence>
+      <Suspense fallback={<LoadingSpinner fullScreen />}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/auth" element={user ? <AuthRedirect /> : <Auth />} />
+          <Route path="/marketplace" element={<AppLayout><Marketplace /></AppLayout>} />
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Routes>
+                    <Route path="/" element={<HomeGuard />} />
+                    <Route path="/customer" element={<CustomerGuard />} />
+                    <Route path="/customer/profile" element={<CustomerProfileGuard />} />
+                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/admin" element={<AdminGuard><AdminOverview /></AdminGuard>} />
+                    <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+                    <Route path="/admin/inventory" element={<AdminGuard><AdminInventory /></AdminGuard>} />
+                    <Route path="/admin/utilities" element={<AdminGuard><AdminUtilities /></AdminGuard>} />
+                    <Route path="/sales" element={<Sales />} />
+                    <Route path="/credit-book" element={<CreditBook />} />
+                    <Route path="/combo-offers" element={<ComboOffers />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/network" element={<ShopNetwork />} />
+                    <Route path="/shop/:id" element={<ShopProducts />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Suspense>
     </>
   );
 }
