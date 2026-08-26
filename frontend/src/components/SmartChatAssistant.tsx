@@ -209,7 +209,7 @@ export default function SmartChatAssistant({ listings }: SmartChatAssistantProps
                 <Store className="h-4 w-4" />
               </div>
               <div>
-                <CardTitle className="text-base">Local Shop Assistant</CardTitle>
+                <CardTitle className="text-base">Local Shopping Assistant</CardTitle>
                 <p className="text-xs text-emerald-100">Usually replies instantly</p>
               </div>
             </div>
