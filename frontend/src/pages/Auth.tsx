@@ -136,7 +136,7 @@ export default function Auth() {
           <div className="mx-auto h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-3">
             <Package className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-display">StockSmart</CardTitle>
+          <CardTitle className="text-2xl font-display">ShopSphere</CardTitle>
           <CardDescription>
             {isLogin ? "Sign in to manage your inventory" : "Create your account"}
           </CardDescription>

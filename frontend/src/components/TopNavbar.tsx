@@ -98,14 +98,14 @@ export function TopNavbar() {
           {/* Logo on Left */}
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0 overflow-hidden">
-              <img src="/logo.svg" alt="StockSmart" className="h-6 w-6 object-contain invert" />
+              <img src="/logo.svg" alt="ShopSphere" className="h-6 w-6 object-contain invert" />
             </div>
             <Link
               to={userRole === "customer" ? "/customer" : userRole === "admin" ? "/admin" : "/"}
               className="hidden md:block"
             >
               <span className="font-display text-lg font-bold tracking-tight text-foreground">
-                StockSmart
+                ShopSphere
               </span>
             </Link>
           </div>

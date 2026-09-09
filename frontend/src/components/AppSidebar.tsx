@@ -73,12 +73,12 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0 overflow-hidden">
-            <img src="/logo.svg" alt="StockSmart" className="h-8 w-8 object-contain" />
+            <img src="/logo.svg" alt="ShopSphere" className="h-8 w-8 object-contain" />
           </div>
           {!collapsed && (
             <div>
               <h2 className="font-display text-sm font-bold text-sidebar-primary-foreground tracking-tight">
-                StockSmart
+                ShopSphere
               </h2>
               <p className="text-[11px] text-sidebar-foreground/60">
                 {userRole === 'customer' ? 'Customer Portal' : 'Inventory Manager'}
