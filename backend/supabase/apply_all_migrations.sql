@@ -1,5 +1,5 @@
 -- ============================================================
--- FRESH DATABASE SETUP for StockSmart
+-- FRESH DATABASE SETUP for ShopSphere
 -- Run this in Supabase SQL Editor (Settings > SQL Editor > New Query)
 -- ============================================================
 

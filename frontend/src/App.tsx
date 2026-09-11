@@ -13,6 +13,7 @@ import { useProfile } from "@/hooks/useData";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 const Auth = React.lazy(() => import("./pages/Auth"));
+const Landing = React.lazy(() => import("./pages/Landing"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const Inventory = React.lazy(() => import("./pages/Inventory"));
 const Sales = React.lazy(() => import("./pages/Sales"));
@@ -70,8 +71,8 @@ function AppRoutes() {
     return <CustomerProfile />;
   }
 
-  // Guard component for root path to redirect customers to their dashboard
-  function HomeGuard() {
+  // Guard component for dashboard path to redirect customers to their dashboard
+  function DashboardGuard() {
     const { user } = useAuth();
     const { data: profile, isLoading: profileLoading } = useProfile();
     if (profileLoading) return <LoadingSpinner fullScreen />;
@@ -87,7 +88,7 @@ function AppRoutes() {
     if (profileLoading) return <LoadingSpinner fullScreen />;
     if (profile?.role === 'admin' || user?.email === 'admin@gmail.com') return <Navigate to="/admin" replace />;
     if (profile?.role === 'customer') return <Navigate to="/customer" replace />;
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   // Guard component for admin routes
@@ -116,6 +117,7 @@ function AppRoutes() {
       <AnimatedBackground />
       <Suspense fallback={<LoadingSpinner fullScreen />}>
         <Routes location={location} key={location.pathname}>
+          <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Landing />} />
           <Route path="/auth" element={user ? <AuthRedirect /> : <Auth />} />
           <Route path="/marketplace" element={<AppLayout><Marketplace /></AppLayout>} />
           <Route
@@ -124,7 +126,7 @@ function AppRoutes() {
               <ProtectedRoute>
                 <AppLayout>
                   <Routes>
-                    <Route path="/" element={<HomeGuard />} />
+                    <Route path="/dashboard" element={<DashboardGuard />} />
                     <Route path="/customer" element={<CustomerGuard />} />
                     <Route path="/customer/profile" element={<CustomerProfileGuard />} />
                     <Route path="/inventory" element={<Inventory />} />
