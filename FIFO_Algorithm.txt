@@ -1,0 +1,78 @@
+Algorithm: StockSmart_FIFO_Inventory_Management
+
+Input:
+    Product_ID
+    New_Batch
+    Sale_Quantity
+
+Data:
+    Inventory[Product_ID] = list of stock batches
+    Each Batch contains:
+        Batch_ID
+        Quantity
+        Purchase_Date
+        Expiry_Date
+
+Step 1: Add New Stock
+    1. Receive product details and batch information.
+    2. Create a new inventory batch.
+    3. Store Batch_ID, Quantity, Purchase_Date and Expiry_Date.
+    4. Add the batch to Inventory[Product_ID].
+    5. Arrange batches according to Purchase_Date
+       from oldest to newest.
+
+Step 2: Process a Sale
+    1. Receive Product_ID and Sale_Quantity.
+    2. Check the total available quantity of the product.
+    3. If available quantity < Sale_Quantity:
+           Display "Insufficient Stock"
+           Stop.
+
+    4. Set Remaining_Quantity = Sale_Quantity.
+
+    5. While Remaining_Quantity > 0:
+           Select the oldest available batch.
+
+           If Batch.Quantity >= Remaining_Quantity:
+               Batch.Quantity =
+                   Batch.Quantity - Remaining_Quantity
+
+               Record the sale against this batch.
+
+               Remaining_Quantity = 0
+
+           Else:
+               Remaining_Quantity =
+                   Remaining_Quantity - Batch.Quantity
+
+               Record the complete batch as sold.
+
+               Batch.Quantity = 0
+
+               Remove the empty batch from inventory.
+
+    6. Update total product stock.
+
+Step 3: Expiry Monitoring
+    1. For each batch in Inventory:
+           Calculate Days_To_Expiry.
+
+    2. If Days_To_Expiry <= Alert_Threshold:
+           Generate "Near Expiry" alert.
+
+    3. If the batch has expired:
+           Mark the batch as "Expired".
+           Prevent it from being sold.
+
+Step 4: Update Analytics
+    1. Record Product_ID, Batch_ID and Quantity_Sold.
+    2. Update sales history.
+    3. Update remaining inventory.
+    4. Use sales data for analytics and recommendations.
+
+Output:
+    Updated Inventory
+    Updated Batch Quantities
+    Sales Record
+    Expiry Status
+    Inventory Analytics
