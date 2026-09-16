@@ -10,6 +10,15 @@ This project is divided into two main folders for clarity:
 - **`frontend/`**: Contains the React/Vite application code.
 - **`backend/`**: Contains backend configuration (Firebase, Supabase, etc.).
 
+## Three-Tier Conceptual Architecture
+
+<img width="1121" height="410" alt="Screenshot 2026-09-16 at 11 15 41 PM" src="https://github.com/user-attachments/assets/c6441475-0cde-4388-8c1e-9765cb5e2a75" />
+
+
+## MERN Stack Component Interaction Flow
+
+<img width="1118" height="291" alt="Screenshot 2026-09-16 at 11 15 58 PM" src="https://github.com/user-attachments/assets/329636f1-bdb7-4f32-9c84-9d84139630d1" />
+
 
 **Use your preferred IDE**
 
